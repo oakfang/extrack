@@ -48,7 +48,7 @@ function AddUserForm({ stopAddingUser, addUser, teams }) {
           }}
         >
           <option value="">No team</option>
-          {teams.map((team) => (
+          {Object.values(teams).map((team) => (
             <option key={team.id} value={team.id}>
               {team.name}
             </option>

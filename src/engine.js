@@ -2,13 +2,34 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { v4 as uuid } from "uuid";
 import _ from "lodash";
 import { io } from "socket.io-client";
+import { Team } from "./common";
 
 const socket = io();
 const connection = new Promise((resolve) => socket.on("connect", resolve));
 
-function createPersistedState(key) {
+function createPersistedState(
+  key,
+  {
+    initialValue = {},
+    adder = (current, item) => ({ ...current, [item.id]: item }),
+    updater = (current, item) => ({ ...current, [item.id]: item }),
+    remover = (current, itemId) => _.omit(current, itemId),
+  } = {}
+) {
   return function useLocalState() {
-    const [state, setState] = useState([]);
+    const [state, setState] = useState(initialValue);
+    const addLocalItem = useCallback(
+      (item) => setState((current) => adder(current, item)),
+      []
+    );
+    const updateLocalItem = useCallback(
+      (item) => setState((current) => updater(current, item)),
+      []
+    );
+    const deleteLocalItem = useCallback(
+      (itemId) => setState((current) => remover(current, itemId)),
+      []
+    );
     useEffect(() => {
       socket.emit(`${key}:fetch`);
       const mainListener = ({ origin, data }) => {
@@ -18,28 +39,23 @@ function createPersistedState(key) {
       };
       socket.on(key, mainListener);
 
-      const createListener = ({ origin, data }) => {
+      const createListener = ({ origin, data: item }) => {
         if (origin !== socket.id) {
-          setState((current) => current.concat([data]));
+          addLocalItem(item);
         }
       };
       socket.on(`${key}:create`, createListener);
 
-      const updateListener = ({ origin, data }) => {
+      const updateListener = ({ origin, data: item }) => {
         if (origin !== socket.id) {
-          setState((state) => {
-            const index = state.findIndex((u) => u.id === data.id);
-            return [...state.slice(0, index), data, ...state.slice(index + 1)];
-          });
+          updateLocalItem(item);
         }
       };
       socket.on(`${key}:update`, updateListener);
 
-      const deleteListener = ({ origin, data }) => {
+      const deleteListener = ({ origin, data: itemId }) => {
         if (origin !== socket.id) {
-          setState((state) => {
-            return state.filter((item) => item.id !== data);
-          });
+          deleteLocalItem(itemId);
         }
       };
       socket.on(`${key}:delete`, deleteListener);
@@ -50,71 +66,80 @@ function createPersistedState(key) {
         socket.off(`${key}:update`, updateListener);
         socket.off(`${key}:delete`, deleteListener);
       };
-    }, []);
+    }, [addLocalItem, updateLocalItem, deleteLocalItem]);
 
-    return [state, setState];
+    const addItem = async (item) => {
+      addLocalItem(item);
+      await connection;
+      socket.emit(`${key}:create`, item);
+    };
+
+    const updateItem = async (item) => {
+      updateLocalItem(item);
+      await connection;
+      socket.emit(`${key}:update`, item);
+    };
+
+    const deleteItem = async (item) => {
+      deleteLocalItem(item);
+      await connection;
+      socket.emit(`${key}:delete`, item);
+    };
+
+    return [state, setState, { addItem, updateItem, deleteItem }];
   };
 }
 
 const useTeamsState = createPersistedState("teams");
 const useUsersState = createPersistedState("users");
+const useCombatState = createPersistedState("combat", {
+  initialValue: {
+    currentTick: null,
+    forcedCurrentUserId: null,
+  },
+  adder() {
+    return {
+      currentTick: null,
+      forcedCurrentUserId: null,
+    };
+  },
+  updater(current, patch) {
+    return {
+      ...current,
+      ...patch,
+    };
+  },
+  remover(current) {
+    return current;
+  },
+});
 
 export function useExTrackerState() {
-  const [currentTick, setCurrentTick] = useState(null);
-  const [teams, setTeams] = useTeamsState();
-  const [addingTeam, setAddingTeam] = useState(false);
-  const stopAddingTeam = () => setAddingTeam(false);
-  const startAddingTeam = () => setAddingTeam(true);
-  const addTeam = ({ name, flag }) => {
-    const team = {
+  //#region teams
+  const [
+    teams,
+    ,
+    { addItem: createTeam, deleteItem: deleteTeam },
+  ] = useTeamsState();
+  const addTeam = ({ name, flag }) =>
+    createTeam({
       id: uuid(),
       name,
       flag,
-    };
+    });
+  const [addingTeam, setAddingTeam] = useState(false);
+  const stopAddingTeam = () => setAddingTeam(false);
+  const startAddingTeam = () => setAddingTeam(true);
+  //#endregion teams
 
-    setTeams((teams) => teams.concat([team]));
-  };
-  const teamById = useMemo(() => _.keyBy(teams, "id"), [teams]);
-  const [rawUsers, setUsers] = useUsersState();
-  const users = useMemo(
-    () =>
-      rawUsers.map((user) => {
-        if (!user.teamId) {
-          return user;
-        }
-        if (Object.getOwnPropertyDescriptor(user, "team")) {
-          return user;
-        }
-        return Object.defineProperty(user, "team", {
-          enumerable: false,
-          get() {
-            return teamById[user.teamId];
-          },
-        });
-      }),
-    [rawUsers, teamById]
-  );
-  const updateUser = useCallback(
-    async (user) => {
-      setUsers((users) => {
-        const index = users.findIndex((u) => u.id === user.id);
-        return [...users.slice(0, index), user, ...users.slice(index + 1)];
-      });
-      await connection;
-      socket.emit("users:update", user);
-    },
-    [setUsers]
-  );
-  const [activeUserId, setActiveUserId] = useState(null);
-  const activeUser = useMemo(
-    () => activeUserId && users.find((user) => user.id === activeUserId),
-    [users, activeUserId]
-  );
-  const [addingUser, setAddingUser] = useState(false);
-  const stopAddingUser = () => setAddingUser(false);
-  const startAddingUser = () => setAddingUser(true);
-  const addUser = async ({ name, joinCombat, teamId }) => {
-    const user = {
+  //#region users
+  const [
+    rawUsers,
+    ,
+    { updateItem: updateUser, addItem: createUser, deleteItem: removeUser },
+  ] = useUsersState();
+  const addUser = ({ name, joinCombat, teamId }) =>
+    createUser({
       id: uuid(),
       name,
       teamId,
@@ -122,16 +147,41 @@ export function useExTrackerState() {
       damage: 0,
       acted: false,
       initiative: joinCombat + 3,
-    };
+    });
+  const users = useMemo(
+    () =>
+      _.mapValues(rawUsers, (user) => {
+        if (!user.teamId) {
+          return user;
+        }
+        return { ...user, [Team]: teams[user.teamId] };
+      }),
+    [rawUsers, teams]
+  );
+  const [addingUser, setAddingUser] = useState(false);
+  const stopAddingUser = () => setAddingUser(false);
+  const startAddingUser = () => setAddingUser(true);
+  const [activeUserId, setActiveUserId] = useState(null);
+  const activeUser = useMemo(() => users[activeUserId], [users, activeUserId]);
+  //#endregion users
 
-    setUsers((users) => users.concat([user]));
-    await connection;
-    socket.emit("users:create", user);
-  };
-
-  const usersByInitiative = useMemo(() => _.groupBy(users, "initiative"), [
-    users,
-  ]);
+  const [
+    { currentTick, forcedCurrentUserId },
+    ,
+    {
+      updateItem: updateCombatState,
+      addItem: startNewCombatRound,
+      deleteItem: clearCombatState,
+    },
+  ] = useCombatState();
+  const setForcedCurrentUserId = useCallback(
+    (userId) => updateCombatState({ forcedCurrentUserId: userId }),
+    [updateCombatState]
+  );
+  const usersByInitiative = useMemo(
+    () => _.groupBy(Object.values(users), "initiative"),
+    [users]
+  );
   const initiatives = useMemo(
     () => Object.keys(usersByInitiative).map((init) => parseInt(init)),
     [usersByInitiative]
@@ -142,74 +192,47 @@ export function useExTrackerState() {
     minTick,
     maxTick,
   ]);
-  const [forceCurrentUser, setForceCurrentUser] = useState(null);
-  const organicCurrentUser = useMemo(() => {
+
+  const organicCurrentUserId = useMemo(() => {
     if (currentTick === null) return null;
     return usersByInitiative[currentTick]?.find((user) => !user.acted)?.id;
   }, [currentTick, usersByInitiative]);
-  const currentUser = useMemo(() => {
-    if (forceCurrentUser) return forceCurrentUser;
-    return organicCurrentUser;
-  }, [organicCurrentUser, forceCurrentUser]);
-  const currentUserObject = useMemo(
-    () => currentUser && users.find((user) => user.id === currentUser),
-    [currentUser, users]
-  );
+  const currentUserId = useMemo(() => {
+    if (forcedCurrentUserId) return forcedCurrentUserId;
+    return organicCurrentUserId;
+  }, [organicCurrentUserId, forcedCurrentUserId]);
+  const currentUser = useMemo(() => users[currentUserId], [
+    currentUserId,
+    users,
+  ]);
+
+  const isOutOfOrder = forcedCurrentUserId !== organicCurrentUserId;
   useEffect(() => {
-    if (!currentUserObject && forceCurrentUser) {
-      setForceCurrentUser(null);
+    if (currentUser?.id && !forcedCurrentUserId) {
+      setForcedCurrentUserId(currentUser.id);
+      updateUser({ ...currentUser, onslaught: 0 });
     }
-  }, [currentUserObject, forceCurrentUser]);
-  const isOutOfOrder = forceCurrentUser !== organicCurrentUser;
-  useEffect(() => {
-    if (currentUser && !forceCurrentUser) {
-      setForceCurrentUser(currentUser);
-      setUsers((users) => {
-        const index = users.findIndex((u) => u.id === currentUser);
-        return [
-          ...users.slice(0, index),
-          { ...users[index], onslaught: 0 },
-          ...users.slice(index + 1),
-        ];
-      });
-    }
-  }, [currentUser, forceCurrentUser, setUsers]);
+  }, [currentUser, forcedCurrentUserId, updateUser, setForcedCurrentUserId]);
+
+  // request new combat state
+  const clearBattleStats = () => {
+    clearCombatState();
+  };
+
+  async function findNextTick() {
+    await connection;
+    socket.emit("combat:syncTick");
+  }
+
   const startNewRound = () => {
-    if (currentUser) {
+    if (currentUserId) {
       if (!window.confirm("Are you sure? There is an active user...")) {
         return;
       }
     }
-    setForceCurrentUser(null);
-    setCurrentTick(Math.max(...initiatives));
-    setUsers((users) => users.map((user) => ({ ...user, acted: false })));
+    startNewCombatRound();
+    findNextTick();
   };
-  const clearBattleStats = () => {
-    setUsers((users) =>
-      users.map((user) => ({ ...user, damage: 0, onslaught: 0 }))
-    );
-  };
-  const removeUser = async (userId) => {
-    setUsers((users) => users.filter((user) => user.id !== userId));
-    await connection;
-    socket.emit("users:delete", userId);
-  };
-  useEffect(() => {
-    if (currentTick !== null && !currentUserObject) {
-      const availableTicks = Object.entries(usersByInitiative)
-        .filter(([, users]) => users.some((user) => !user.acted))
-        .map(([init]) => +init);
-      if (!availableTicks.length) {
-        return setCurrentTick(null);
-      }
-      setCurrentTick(Math.max(...availableTicks));
-    } else if (
-      currentUserObject &&
-      currentTick !== currentUserObject.initiative
-    ) {
-      setCurrentTick(currentUserObject.initiative);
-    }
-  }, [currentTick, currentUserObject, usersByInitiative]);
 
   return {
     users,
@@ -225,7 +248,8 @@ export function useExTrackerState() {
     startNewRound,
     currentTick,
     currentUser,
-    setForceCurrentUser,
+    currentUserId,
+    setForcedCurrentUserId,
     isOutOfOrder,
     addingTeam,
     stopAddingTeam,
@@ -234,5 +258,7 @@ export function useExTrackerState() {
     teams,
     clearBattleStats,
     removeUser,
+    findNextTick,
+    deleteTeam,
   };
 }

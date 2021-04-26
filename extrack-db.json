@@ -1,4 +1,33 @@
 {
-  "teams": {},
-  "users": {}
+  "teams": {
+    "e637c82e-cea1-4f1c-b9d9-8ba93bde745c": {
+      "id": "e637c82e-cea1-4f1c-b9d9-8ba93bde745c",
+      "name": "DBs",
+      "flag": "#970808"
+    }
+  },
+  "users": {
+    "daa6f7a0-f4c9-4870-9830-43fff4323e10": {
+      "id": "daa6f7a0-f4c9-4870-9830-43fff4323e10",
+      "name": "Mnemon Oreta",
+      "teamId": "e637c82e-cea1-4f1c-b9d9-8ba93bde745c",
+      "onslaught": 0,
+      "damage": 0,
+      "acted": false,
+      "initiative": 5
+    },
+    "3b2dc124-1feb-43e7-a35c-a72d1906807f": {
+      "id": "3b2dc124-1feb-43e7-a35c-a72d1906807f",
+      "name": "Ragara Nerun",
+      "teamId": "e637c82e-cea1-4f1c-b9d9-8ba93bde745c",
+      "onslaught": 0,
+      "damage": 0,
+      "acted": false,
+      "initiative": 7
+    }
+  },
+  "combatState": {
+    "currentTick": 7,
+    "forcedCurrentUserId": "3b2dc124-1feb-43e7-a35c-a72d1906807f"
+  }
 }

@@ -19,7 +19,7 @@ export function Tick({
           return (
             <User
               key={user.name}
-              isCurrent={currentUser === user.id}
+              isCurrent={currentUser?.id === user.id}
               user={user}
               setActiveUserId={setActiveUserId}
             />

@@ -1,10 +1,9 @@
-import styled from "styled-components";
 import { useState } from "react";
 import immer from "immer";
 import { Dialog } from "@reach/dialog";
 import "@reach/dialog/styles.css";
 import { Attack, AttackForm } from "./AttackForm";
-import { Form, Footer, Row, Col, stringToNumber } from "./common";
+import { Form, Footer, Row, Col, stringToNumber, DangerButton } from "./common";
 
 function UserDialogForm({
   activeUser,
@@ -12,10 +11,11 @@ function UserDialogForm({
   setActiveUserId,
   currentUser,
   users,
-  setForceCurrentUser,
+  setForcedCurrentUserId,
   isOutOfOrder,
   teams,
   removeUser,
+  findNextTick,
 }) {
   const [attack, setAttack] = useState(Attack.None);
   if (!activeUser) return null;
@@ -75,7 +75,7 @@ function UserDialogForm({
                 }}
               >
                 <option value="">No team</option>
-                {teams.map((team) => (
+                {Object.values(teams).map((team) => (
                   <option key={team.id} value={team.id}>
                     {team.name}
                   </option>
@@ -142,7 +142,7 @@ function UserDialogForm({
           >
             Remove from play
           </DangerButton>
-          {currentUser === activeUser.id ? (
+          {currentUser?.id === activeUser.id ? (
             <button
               type="button"
               onClick={() => {
@@ -153,8 +153,9 @@ function UserDialogForm({
                     })
                   );
                 }
-                setForceCurrentUser(null);
+                setForcedCurrentUserId(null);
                 setActiveUserId(null);
+                findNextTick();
               }}
             >
               Finish turn
@@ -163,7 +164,7 @@ function UserDialogForm({
             <button
               type="button"
               onClick={() => {
-                setForceCurrentUser(activeUser.id);
+                setForcedCurrentUserId(activeUser.id);
               }}
             >
               Force Active
@@ -186,8 +187,3 @@ export function UserDialog(props) {
     </Dialog>
   );
 }
-
-const DangerButton = styled.button.attrs({ type: "button" })`
-  background-color: #6d0202;
-  color: white;
-`;

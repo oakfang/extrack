@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import Tooltip from "@reach/tooltip";
 import "@reach/tooltip/styles.css";
+import { Team } from "./common";
 
 export function User({ user, setActiveUserId, isCurrent }) {
   return (
@@ -15,7 +16,7 @@ export function User({ user, setActiveUserId, isCurrent }) {
         }}
         onClick={() => setActiveUserId(user.id)}
         $active={isCurrent}
-        $flag={user.team?.flag}
+        $flag={user[Team]?.flag}
       >
         <label>
           {user.name

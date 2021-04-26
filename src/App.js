@@ -4,6 +4,7 @@ import { UserDialog } from "./UserDialog";
 import { AddUserDialog } from "./AddUserDialog";
 import { AddTeamDialog } from "./AddTeamDialog";
 import { Tick } from "./Tick";
+import { Team } from "./Team";
 import { Header, Row } from "./common";
 
 export function App() {
@@ -21,7 +22,7 @@ export function App() {
     startNewRound,
     currentTick,
     currentUser,
-    setForceCurrentUser,
+    setForcedCurrentUserId,
     isOutOfOrder,
     addingTeam,
     stopAddingTeam,
@@ -30,6 +31,8 @@ export function App() {
     teams,
     clearBattleStats,
     removeUser,
+    findNextTick,
+    deleteTeam,
   } = useExTrackerState();
 
   return (
@@ -40,10 +43,11 @@ export function App() {
         currentUser={currentUser}
         activeUser={activeUser}
         setActiveUserId={setActiveUserId}
-        setForceCurrentUser={setForceCurrentUser}
+        setForcedCurrentUserId={setForcedCurrentUserId}
         updateUser={updateUser}
         isOutOfOrder={isOutOfOrder}
         removeUser={removeUser}
+        findNextTick={findNextTick}
       />
       <AddTeamDialog
         addingTeam={addingTeam}
@@ -57,10 +61,8 @@ export function App() {
         teams={teams}
       />
       <Header>
-        {teams.map((team) => (
-          <p key={team.id} style={{ color: team.flag }}>
-            {team.name}
-          </p>
+        {Object.values(teams).map((team) => (
+          <Team key={team.id} team={team} deleteTeam={deleteTeam} />
         ))}
       </Header>
       <MainRuler>

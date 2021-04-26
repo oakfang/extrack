@@ -60,3 +60,10 @@ export const Header = styled.header`
   justify-content: center;
   gap: 20px;
 `;
+
+export const DangerButton = styled.button.attrs({ type: "button" })`
+  background-color: #6d0202;
+  color: white;
+`;
+
+export const Team = Symbol("team");
