@@ -145,6 +145,7 @@ export function useExTrackerState() {
       teamId,
       onslaught: 0,
       damage: 0,
+      anima: 0,
       acted: false,
       initiative: joinCombat + 3,
     });

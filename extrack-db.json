@@ -4,6 +4,11 @@
       "id": "e637c82e-cea1-4f1c-b9d9-8ba93bde745c",
       "name": "DBs",
       "flag": "#970808"
+    },
+    "36a1f5b4-2e00-4f81-94fe-e65d4e5b19bd": {
+      "id": "36a1f5b4-2e00-4f81-94fe-e65d4e5b19bd",
+      "name": "Circle",
+      "flag": "#1cb1ec"
     }
   },
   "users": {
@@ -11,10 +16,11 @@
       "id": "daa6f7a0-f4c9-4870-9830-43fff4323e10",
       "name": "Mnemon Oreta",
       "teamId": "e637c82e-cea1-4f1c-b9d9-8ba93bde745c",
-      "onslaught": 0,
+      "onslaught": -1,
       "damage": 0,
       "acted": false,
-      "initiative": 5
+      "initiative": 2,
+      "anima": 3
     },
     "3b2dc124-1feb-43e7-a35c-a72d1906807f": {
       "id": "3b2dc124-1feb-43e7-a35c-a72d1906807f",
@@ -23,7 +29,28 @@
       "onslaught": 0,
       "damage": 0,
       "acted": false,
-      "initiative": 7
+      "initiative": 7,
+      "anima": 1
+    },
+    "85dd556a-5d8f-40e0-9959-aee9a7c27d61": {
+      "id": "85dd556a-5d8f-40e0-9959-aee9a7c27d61",
+      "name": "Cathak Reyn",
+      "teamId": "36a1f5b4-2e00-4f81-94fe-e65d4e5b19bd",
+      "onslaught": 0,
+      "damage": 0,
+      "anima": 0,
+      "acted": true,
+      "initiative": 12
+    },
+    "742629ad-8b7b-486b-8157-fb3f2e1e2228": {
+      "id": "742629ad-8b7b-486b-8157-fb3f2e1e2228",
+      "name": "Razak",
+      "teamId": "36a1f5b4-2e00-4f81-94fe-e65d4e5b19bd",
+      "onslaught": 0,
+      "damage": 0,
+      "anima": 0,
+      "acted": false,
+      "initiative": 5
     }
   },
   "combatState": {

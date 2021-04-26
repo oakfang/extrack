@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import styled from "styled-components";
 import immer from "immer";
 import { Dialog } from "@reach/dialog";
 import "@reach/dialog/styles.css";
 import { Attack, AttackForm } from "./AttackForm";
 import { Form, Footer, Row, Col, stringToNumber, DangerButton } from "./common";
+
+const ANIMA_LEVELS = ["Dim", "Burning", "Bonfire", "Iconic"];
 
 function UserDialogForm({
   activeUser,
@@ -17,11 +20,12 @@ function UserDialogForm({
   removeUser,
   findNextTick,
 }) {
+  const didStartAsForced = useRef(isOutOfOrder);
   const [attack, setAttack] = useState(Attack.None);
   if (!activeUser) return null;
 
   let attacksSection = null;
-  if (currentUser === activeUser.id) {
+  if (currentUser?.id === activeUser.id) {
     attacksSection = (
       <label>
         Attack:
@@ -40,7 +44,7 @@ function UserDialogForm({
         >
           <AttackForm
             type={attack}
-            users={users}
+            users={Object.values(users)}
             activeUser={activeUser}
             updateUser={updateUser}
             stopAttacking={() => setAttack(Attack.None)}
@@ -49,6 +53,8 @@ function UserDialogForm({
       </label>
     );
   }
+
+  const { anima = 0 } = activeUser;
 
   return (
     <>
@@ -61,6 +67,32 @@ function UserDialogForm({
       >
         <Row>
           <Col>
+            <label>
+              Anima level:
+              <RadioGroup>
+                {ANIMA_LEVELS.map((level, idx) => {
+                  return (
+                    <label key={level}>
+                      <input
+                        type="radio"
+                        name="anima"
+                        value={idx}
+                        checked={anima === idx}
+                        onChange={(e) => {
+                          const { value } = e.target;
+                          updateUser(
+                            immer(activeUser, (draft) => {
+                              draft.anima = parseInt(value);
+                            })
+                          );
+                        }}
+                      />
+                      {level}
+                    </label>
+                  );
+                })}
+              </RadioGroup>
+            </label>
             <label>
               Team:
               <select
@@ -91,7 +123,7 @@ function UserDialogForm({
                   const { value } = e.target;
                   updateUser(
                     immer(activeUser, (draft) => {
-                      draft.damage = value;
+                      draft.damage = Math.max(0, parseInt(value));
                     })
                   );
                 }}
@@ -146,7 +178,7 @@ function UserDialogForm({
             <button
               type="button"
               onClick={() => {
-                if (!isOutOfOrder) {
+                if (!didStartAsForced.current) {
                   updateUser(
                     immer(activeUser, (draft) => {
                       draft.acted = true;
@@ -164,6 +196,7 @@ function UserDialogForm({
             <button
               type="button"
               onClick={() => {
+                didStartAsForced.current = true;
                 setForcedCurrentUserId(activeUser.id);
               }}
             >
@@ -187,3 +220,12 @@ export function UserDialog(props) {
     </Dialog>
   );
 }
+
+const RadioGroup = styled(Row)`
+  gap: 15px;
+  align-items: center;
+
+  label {
+    margin: 0;
+  }
+`;
