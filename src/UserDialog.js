@@ -6,7 +6,7 @@ import "@reach/dialog/styles.css";
 import { Attack, AttackForm } from "./AttackForm";
 import { Form, Footer, Row, Col, stringToNumber, DangerButton } from "./common";
 
-const ANIMA_LEVELS = ["Dim", "Burning", "Bonfire", "Iconic"];
+const ANIMA_LEVELS = ["Dim", "Glowing", "Burning", "Bonfire"];
 
 function UserDialogForm({
   activeUser,
