@@ -10,6 +10,7 @@
     "@testing-library/react": "^11.2.6",
     "@testing-library/user-event": "^12.8.3",
     "concurrently": "^6.0.2",
+    "cross-env": "^7.0.3",
     "express": "^4.17.1",
     "immer": "^9.0.1",
     "localtunnel": "^2.0.1",
@@ -27,7 +28,7 @@
     "web-vitals": "^1.1.1"
   },
   "scripts": {
-    "start:fe": "PORT=4000 react-scripts start",
+    "start:fe": "cross-env PORT=4000 react-scripts start",
     "start:be": "node server",
     "tunnel": "lt --port 4000 --local-host localhost --subdomain extracker",
     "start": "concurrently npm:start:be npm:start:fe npm:tunnel",
